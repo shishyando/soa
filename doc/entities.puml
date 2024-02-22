@@ -1,0 +1,60 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Диаграмма сущностей социальной сети
+
+skinparam linetype polyline
+
+System_Boundary(mainBoundary, "Main microservice") {
+    entity User {
+        *user_id : int <<generated>>
+        --
+        *user_login : varchar(64)
+        *user_password_hash : string salted password hash (SHA3-256)
+    }
+}
+
+System_Boundary(commentsPostsBoundary, "Comments and posts microservice") {
+    entity Post {
+        *post_id : int <<generated>>
+        --
+        *user_id : int <<FK>>
+        --
+        *post_title : varchar(512)
+        *post_text : string
+    }
+
+    entity Comment {
+        *comment_id : int <<generated>>
+        --
+        *user_id : int <<FK>>
+        --
+        *parent_type : literal(<<post>>|<<comment>>)
+        *parent_id : int <<FK>>
+        --
+        *comment_text : string
+    }
+
+}
+
+System_Boundary(statisticsBoundary, "Statistics microservice") {
+    entity Like {
+        *user_id : int <<FK>>
+        *post_id : int <<FK>>
+    }
+
+    entity View {
+        *user_id : int <<FK>>
+        *post_id : int <<FK>>
+    }
+}
+
+User ||--o{ Comment
+User ||--o{ Post
+User ||--o{ Like
+User ||--o{ View
+
+View }o--|| Post
+Like }o--|| Post
+Comment }o--|| Post
+@enduml

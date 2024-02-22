@@ -1,0 +1,9 @@
+@startuml
+title Client-Service communication
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User", "Person that uses the social network")
+System(socialNetwork, "Social network")
+
+Rel(user, socialNetwork, " - Registers\n - Creates and looks for posts and comments\n - Likes posts")
+@enduml
