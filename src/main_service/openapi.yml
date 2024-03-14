@@ -1,0 +1,110 @@
+openapi: 3.0.0
+info:
+  title: User Management API
+  version: 1.0.0
+paths:
+  /users/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid input data
+        '409':
+          description: User with this login already exists
+        '500':
+          description: Internal server error
+  /users/login:
+    post:
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUser'
+      responses:
+        '200':
+          description: User authenticated successfully
+        '400':
+          description: Invalid login or password
+        '500':
+          description: Internal server error
+  /users:
+    put:
+      summary: Update user data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+      responses:
+        '200':
+          description: User data updated successfully
+        '400':
+          description: Invalid input data
+        '401':
+          description: Unauthorized, token expired or does not match the username
+        '403':
+          description: Password change is forbidden
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    NewUser:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The user's login name
+          example: shishyando
+        password:
+          type: string
+          format: password
+          description: The user's password
+          example: secret
+    UpdateUser:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The user's first name
+          example: John
+        surname:
+          type: string
+          description: The user's last name
+          example: Doe
+        dateOfBirth:
+          type: string
+          format: date
+          description: The user's date of birth
+          example: 2004-01-20
+        email:
+          type: string
+          format: email
+          description: The user's email
+          example: shishyando@example.com
+        phoneNumber:
+          type: string
+          description: The user's phone number
+          example: '+79998887766'
+    LoginUser:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The user's login name
+          example: shishyando
+        password:
+          type: string
+          format: password
+          description: The user's password
+          example: secret
