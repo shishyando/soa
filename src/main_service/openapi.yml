@@ -53,8 +53,6 @@ paths:
           description: Invalid input data
         '401':
           description: Unauthorized, token expired or does not match the username
-        '403':
-          description: Password change is forbidden
         '500':
           description: Internal server error
 components:
