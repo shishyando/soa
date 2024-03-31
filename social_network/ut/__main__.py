@@ -71,7 +71,7 @@ class TestSocialNetworkMethods(unittest.TestCase):
     def test_post(self):
         cookies = self.try_login()
 
-        r = requests.put(self.addrs[Handles.POST_CREATE], data=json.dumps({
+        r = requests.post(self.addrs[Handles.POST_CREATE], data=json.dumps({
             "Title": "post#1",
             "Content": "some contents",
             "AuthorLogin": self.login,
@@ -80,7 +80,7 @@ class TestSocialNetworkMethods(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         postId = int(r.json()["PostId"])
 
-        r = requests.get(self.addrs[Handles.POST_GET], data=json.dumps({
+        r = requests.put(self.addrs[Handles.POST_GET], data=json.dumps({
             "PostId": postId
         }), cookies=cookies.get_dict())
         self.assertEqual(r.status_code, 200)
@@ -94,13 +94,13 @@ class TestSocialNetworkMethods(unittest.TestCase):
         }), cookies=cookies.get_dict())
         self.assertEqual(r.status_code, 200)
 
-        r = requests.get(self.addrs[Handles.POST_GET], data=json.dumps({
+        r = requests.put(self.addrs[Handles.POST_GET], data=json.dumps({
             "PostId": postId
         }), cookies=cookies.get_dict())
         self.assertEqual(r.status_code, 200)
         self.assertIn("post#0 (updated)", r.text)
 
-        r = requests.put(self.addrs[Handles.POST_CREATE], data=json.dumps({
+        r = requests.post(self.addrs[Handles.POST_CREATE], data=json.dumps({
             "Title": "post#2",
             "Content": "abacaba",
             "AuthorLogin": self.login,
@@ -109,7 +109,7 @@ class TestSocialNetworkMethods(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         postId = int(r.json()["PostId"])
 
-        r = requests.get(self.addrs[Handles.PAGE_GET], data=json.dumps({
+        r = requests.put(self.addrs[Handles.PAGE_GET], data=json.dumps({
             "PageId": 0
         }), cookies=cookies.get_dict())
 

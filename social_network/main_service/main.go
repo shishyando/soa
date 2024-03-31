@@ -583,11 +583,11 @@ func main() {
 	r.HandleFunc("/users/register", authHandlers.RegisterHandler).Methods("POST")
 	r.HandleFunc("/users/login", authHandlers.LoginHandler).Methods("POST")
 	r.HandleFunc("/users", authHandlers.UpdateUserHandler).Methods("PUT")
-	r.HandleFunc("/posts/create", authHandlers.CreatePostHandler).Methods("PUT")
+	r.HandleFunc("/posts/create", authHandlers.CreatePostHandler).Methods("POST")
 	r.HandleFunc("/posts/update", authHandlers.UpdatePostHandler).Methods("PUT")
-	r.HandleFunc("/posts/delete", authHandlers.DeletePostHandler).Methods("DELETE")
-	r.HandleFunc("/posts/single", authHandlers.GetPostByIdHandler).Methods("GET")
-	r.HandleFunc("/posts/page", authHandlers.GetPostsOnPageHandler).Methods("GET")
+	r.HandleFunc("/posts/delete", authHandlers.DeletePostHandler).Methods("POST")
+	r.HandleFunc("/posts/single", authHandlers.GetPostByIdHandler).Methods("PUT")
+	r.HandleFunc("/posts/page", authHandlers.GetPostsOnPageHandler).Methods("PUT")
 
 	log.Printf("Staring main user server on port %d", *port)
 

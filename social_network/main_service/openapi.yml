@@ -55,6 +55,176 @@ paths:
           description: Unauthorized, token expired or does not match the username
         '500':
           description: Internal server error
+  /posts/create:
+    post:
+      summary: Create post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreate'
+      responses:
+        '200':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+  /posts/update:
+    put:
+      summary: Update post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostUpdate'
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostUpdateResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostUpdateResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostUpdateResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostUpdateResponse'
+  /posts/delete:
+    post:
+      summary: Delete post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostDelete'
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDeleteResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDeleteResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDeleteResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDeleteResponse'
+  /posts/single:
+    put:
+      summary: Get post by its id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostGetById'
+      responses:
+        '200':
+          description: Post found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+  /posts/page:
+    put:
+      summary: Get posts page by page index
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostGetPage'
+      responses:
+        '200':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
 components:
   schemas:
     NewUser:
@@ -106,3 +276,101 @@ components:
           format: password
           description: The user's password
           example: secret
+    PostCreate:
+      type: object
+      properties:
+        Title:
+          type: string
+          description: Post's title
+          example: Alice in Wonderland
+        Content:
+          type: string
+          description: The post's content
+          example: Today I watched a great movie called "Alice in Wonderland"!...
+    PostCreateResponse:
+      type: object
+      properties:
+        Created:
+          type: boolean
+        PostId:
+          type: integer
+          description: Post's unique id if it was successfuly created
+    PostUpdateResponse:
+      type: object
+      properties:
+        Updated:
+          type: boolean
+    PostDeleteResponse:
+      type: object
+      properties:
+        Deleted:
+          type: boolean
+    PostGetByIdResponse:
+      type: object
+      properties:
+        Post:
+          type: object
+          properties:
+            PostId:
+              type: integer
+            Title:
+              type: string
+            Content:
+              type: string
+            AuthorLogin:
+              type: string
+
+    PostGetPageResponse:
+      type: object
+      properties:
+        Posts:
+          type: array
+          items:
+            type: object
+            properties:
+              PostId:
+                type: integer
+              Title:
+                type: string
+              Content:
+                type: string
+              AuthorLogin:
+                type: string
+
+
+    PostUpdate:
+      type: object
+      properties:
+        PostId:
+          type: integer
+          description: Post id received when creating a post
+          example: 42
+        Title:
+          type: string
+          description: Post's new title
+          example: Alice in Wonderland 2
+        Content:
+          type: string
+          description: The post's new content
+          example: Yesterday I watched a great movie called "Alice in Wonderland 2"!...
+    PostDelete:
+      type: object
+      properties:
+        PostId:
+          type: integer
+          description: Post id received when creating a post
+          example: 42
+    PostGetById:
+      type: object
+      properties:
+        PostId:
+          type: integer
+          description: Post id recevied when creating a post
+          example: 42
+    PostGetPage:
+      type: object
+      properties:
+        PageId:
+          type: integer
+          description: Page index
+          example: 0
