@@ -9,5 +9,5 @@ RUN go mod download -x
 
 RUN go build .
 
-ENTRYPOINT ["./main_service", "--private", "./private_unencrypted.pem", "--public", "./public.pub"]
+ENTRYPOINT ["./main_service", "--private", "./private_unencrypted.pem", "--public", "./public.pem"]
 
