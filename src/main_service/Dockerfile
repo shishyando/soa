@@ -9,5 +9,5 @@ COPY * .
 
 RUN go build .
 
-ENTRYPOINT ["./main_user_service", "--private", "./private_unencrypted.pem", "--public", "./public.pub"]
+ENTRYPOINT ["./main_user_service", "--private", "./private_unencrypted.pem", "--public", "./public.pem"]
 
