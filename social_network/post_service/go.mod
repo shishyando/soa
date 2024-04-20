@@ -6,7 +6,7 @@ replace proto => ../proto
 
 require google.golang.org/grpc v1.62.1
 
-require google.golang.org/protobuf v1.33.0 // indirect
+require google.golang.org/protobuf v1.33.0
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect

@@ -101,71 +101,40 @@ paths:
       responses:
         '200':
           description: Post updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostUpdateResponse'
         '400':
           description: Invalid input data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostUpdateResponse'
         '401':
           description: Unauthorized, token expired or does not match the username
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostUpdateResponse'
         '500':
           description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostUpdateResponse'
-  /posts/delete:
-    post:
+  /posts/delete/{post_id}:
+    delete:
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            
       summary: Delete post
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostDelete'
       responses:
         '200':
           description: Post deleted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDeleteResponse'
         '400':
           description: Invalid input data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDeleteResponse'
         '401':
           description: Unauthorized, token expired or does not match the username
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDeleteResponse'
         '500':
           description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDeleteResponse'
-  /posts/single:
-    put:
+  /posts/single/{post_id}:
+    get:
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Get post by its id
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostGetById'
       responses:
         '200':
           description: Post found
@@ -191,15 +160,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PostGetByIdResponse'
-  /posts/page:
-    put:
+  /posts/page/{page_id}:
+    get:
+      parameters:
+        - name: page_id
+          in: path
+          required: true
+          schema:
+            type: integer
       summary: Get posts page by page index
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostGetPage'
       responses:
         '200':
           description: Post created successfully
@@ -290,21 +259,9 @@ components:
     PostCreateResponse:
       type: object
       properties:
-        Created:
-          type: boolean
         PostId:
           type: integer
           description: Post's unique id if it was successfuly created
-    PostUpdateResponse:
-      type: object
-      properties:
-        Updated:
-          type: boolean
-    PostDeleteResponse:
-      type: object
-      properties:
-        Deleted:
-          type: boolean
     PostGetByIdResponse:
       type: object
       properties:
@@ -336,8 +293,6 @@ components:
                 type: string
               AuthorLogin:
                 type: string
-
-
     PostUpdate:
       type: object
       properties:
@@ -353,24 +308,3 @@ components:
           type: string
           description: The post's new content
           example: Yesterday I watched a great movie called "Alice in Wonderland 2"!...
-    PostDelete:
-      type: object
-      properties:
-        PostId:
-          type: integer
-          description: Post id received when creating a post
-          example: 42
-    PostGetById:
-      type: object
-      properties:
-        PostId:
-          type: integer
-          description: Post id recevied when creating a post
-          example: 42
-    PostGetPage:
-      type: object
-      properties:
-        PageId:
-          type: integer
-          description: Page index
-          example: 0

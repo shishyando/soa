@@ -1,12 +1,14 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+
 package post;
 option go_package = "./;post";
 
 service PostService {
   rpc CreatePost(TCreatePostRequest) returns (TCreatePostResponse) {}
-  rpc UpdatePost(TUpdatePostRequest) returns (TUpdatePostResponse) {}
-  rpc DeletePost(TDeletePostRequest) returns (TDeletePostResponse) {}
+  rpc UpdatePost(TUpdatePostRequest) returns (google.protobuf.Empty) {}
+  rpc DeletePost(TDeletePostRequest) returns (google.protobuf.Empty) {}
   rpc GetPostById(TGetPostByIdRequest) returns (TGetPostByIdResponse) {}
   rpc GetPostsOnPage(TGetPostsOnPageRequest) returns (TGetPostsOnPageResponse) {
   }
@@ -19,16 +21,19 @@ message TPost {
   string AuthorLogin = 4;
 }
 
+message TPostStats {
+  uint64 PostId = 1;
+  uint64 Viewed = 2;
+  uint64 Liked = 3;
+}
+
 message TCreatePostRequest {
   string Title = 1;
   string Content = 2;
   string AuthorLogin = 3;
 }
 
-message TCreatePostResponse {
-  bool Created = 1;
-  optional uint64 PostId = 2;
-}
+message TCreatePostResponse { optional uint64 PostId = 1; }
 
 message TUpdatePostRequest {
   uint64 PostId = 1;
@@ -37,14 +42,10 @@ message TUpdatePostRequest {
   string AuthorLogin = 4;
 }
 
-message TUpdatePostResponse { bool Updated = 1; }
-
 message TDeletePostRequest {
   uint64 PostId = 1;
   string AuthorLogin = 2;
 }
-
-message TDeletePostResponse { bool Deleted = 1; }
 
 message TGetPostByIdRequest { uint64 PostId = 1; }
 

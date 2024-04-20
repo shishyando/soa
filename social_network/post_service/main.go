@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	_ "github.com/lib/pq"
 )
@@ -61,12 +62,12 @@ func (s *server) CreatePost(ctx context.Context, request *pb.TCreatePostRequest)
 		request.AuthorLogin,
 	).Scan(&postId)
 	if err != nil {
-		return &pb.TCreatePostResponse{Created: false}, status.Errorf(codes.Internal, "failed to create post: %v", err)
+		return &pb.TCreatePostResponse{}, status.Errorf(codes.Internal, "failed to create post: %v", err)
 	}
-	return &pb.TCreatePostResponse{Created: true, PostId: &postId}, nil
+	return &pb.TCreatePostResponse{PostId: &postId}, nil
 }
 
-func (s *server) UpdatePost(ctx context.Context, req *pb.TUpdatePostRequest) (*pb.TUpdatePostResponse, error) {
+func (s *server) UpdatePost(ctx context.Context, req *pb.TUpdatePostRequest) (*emptypb.Empty, error) {
 	result, err := db.ExecContext(
 		ctx,
 		"UPDATE POSTS SET Title = $1, Content = $2 WHERE PostId = $3 and AuthorLogin = $4",
@@ -76,40 +77,40 @@ func (s *server) UpdatePost(ctx context.Context, req *pb.TUpdatePostRequest) (*p
 		req.AuthorLogin,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update post: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to update post: %v", err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return &pb.TUpdatePostResponse{Updated: false}, status.Errorf(codes.Internal, "failed to update post: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to update post: %v", err)
 	}
 	if rowsAffected == 0 {
-		return &pb.TUpdatePostResponse{Updated: false}, status.Errorf(codes.PermissionDenied, "Author change is restricted")
+		return &emptypb.Empty{}, status.Errorf(codes.PermissionDenied, "author change is restricted")
 	}
 
-	return &pb.TUpdatePostResponse{Updated: true}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (s *server) DeletePost(ctx context.Context, req *pb.TDeletePostRequest) (*pb.TDeletePostResponse, error) {
+func (s *server) DeletePost(ctx context.Context, req *pb.TDeletePostRequest) (*emptypb.Empty, error) {
 	result, err := db.ExecContext(ctx, "DELETE FROM POSTS WHERE PostId = $1 and AuthorLogin = $2", req.PostId, req.AuthorLogin)
 	if err != nil {
-		return &pb.TDeletePostResponse{Deleted: false}, status.Errorf(codes.Internal, "Failed to update post: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to update post: %v", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return &pb.TDeletePostResponse{Deleted: false}, status.Errorf(codes.Internal, "Failed to delete post: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to delete post: %v", err)
 	}
 
 	if rowsAffected == 0 {
 		result, _ := db.ExecContext(ctx, "SELECT FROM POSTS WHERE PostId = $1", req.PostId)
 		rowsAffected, _ := result.RowsAffected()
 		if rowsAffected != 0 {
-			return &pb.TDeletePostResponse{Deleted: false}, status.Errorf(codes.PermissionDenied, "You are not the author of this post")
+			return &emptypb.Empty{}, status.Errorf(codes.PermissionDenied, "you are not the author of this post")
 		}
-		return &pb.TDeletePostResponse{Deleted: false}, status.Errorf(codes.NotFound, "Post not found")
+		return &emptypb.Empty{}, status.Errorf(codes.NotFound, "post not found")
 	}
 
-	return &pb.TDeletePostResponse{Deleted: true}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *server) GetPostById(ctx context.Context, req *pb.TGetPostByIdRequest) (*pb.TGetPostByIdResponse, error) {
@@ -120,7 +121,7 @@ func (s *server) GetPostById(ctx context.Context, req *pb.TGetPostByIdRequest) (
 		req.PostId,
 	).Scan(&post.PostId, &post.Title, &post.Content, &post.AuthorLogin)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "Post not found")
+		return nil, status.Errorf(codes.NotFound, "post not found")
 	}
 
 	return &pb.TGetPostByIdResponse{Post: &post}, nil
