@@ -14,6 +14,12 @@ service PostService {
   }
 }
 
+service StatsService {
+  rpc GetPostStats(TGetPostStatsRequest) returns (TGetPostStatsResponse) {}
+  rpc GetTopPosts(google.protobuf.Empty) returns (TGetTopPostsResponse) {}
+  rpc GetTopAuthors(google.protobuf.Empty) returns (TGetTopAuthorsResponse) {}
+}
+
 message TPost {
   uint64 PostId = 1;
   string Title = 2;
@@ -54,3 +60,22 @@ message TGetPostByIdResponse { optional TPost Post = 1; }
 message TGetPostsOnPageRequest { uint64 PageId = 1; }
 
 message TGetPostsOnPageResponse { repeated TPost Posts = 1; }
+
+message TGetPostStatsRequest { uint64 PostId = 1; }
+
+message TGetPostStatsResponse {
+  uint64 PostId = 1;
+  uint64 Likes = 2;
+  uint64 Views = 3;
+}
+
+message TGetTopPostsResponse { repeated TPost Posts = 1; }
+
+message TGetTopAuthorsResponse {
+  message TAuthor {
+    string AuthorLogin = 1;
+    uint64 Likes = 2;
+  }
+
+  repeated TAuthor Authors = 1;
+}

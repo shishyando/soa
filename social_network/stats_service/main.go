@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,7 +10,10 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/IBM/sarama"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/gorilla/mux"
 
@@ -23,16 +25,17 @@ var (
 	db driver.Conn
 )
 
-type TAggregatedStats struct {
-	PostId uint64 `json:"postId"`
-	Views  uint64 `json:"views"`
-	Likes  uint64 `json:"likes"`
+type server struct {
+	pb.UnimplementedStatsServiceServer
 }
 
 func main() {
 	ConnectClickhouseDB()
 
 	CreateTable()
+
+	serverInstance := grpc.NewServer()
+	pb.RegisterStatsServiceServer(serverInstance, &server{})
 
 	r := mux.NewRouter()
 	r.HandleFunc("/health", HealthCheckHandler).Methods("GET")
@@ -67,9 +70,18 @@ func CreateTable() {
             timestamp DateTime
         ) engine = MergeTree()
         ORDER BY post_id
-        PRIMARY KEY post_id
+        PRIMARY KEY post_id;
     `)
-	better_errors.CheckErrorFatal(err, "error on creating table")
+	better_errors.CheckErrorFatal(err, "error on creating post_stats")
+	err = db.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS post_author (
+			post_id UInt64,
+			author_login String
+		) engine = MergeTree()
+		ORDER BY post_id
+		PRIMARY KEY post_id;
+    `)
+	better_errors.CheckErrorFatal(err, "error on creating post_author")
 }
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +92,20 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("All good.\n"))
+}
+
+func GetPostStats(postId uint64) (*pb.TGetPostStatsResponse, error) {
+	row := db.QueryRow(context.Background(), fmt.Sprintf(`
+		SELECT
+			first_value(post_id) as PostId,
+			sum(viewed) as Views,
+			sum(liked) as Likes
+		FROM post_stats
+		WHERE post_id == %v
+	`, postId))
+	stats := &pb.TGetPostStatsResponse{}
+	err := row.ScanStruct(stats)
+	return stats, err
 }
 
 func GetPostStatsHandler(w http.ResponseWriter, r *http.Request) {
@@ -93,29 +119,18 @@ func GetPostStatsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row := db.QueryRow(r.Context(), fmt.Sprintf(`
-		SELECT
-			first_value(post_id) as PostId,
-			sum(viewed) as Views,
-			sum(liked) as Likes
-		FROM post_stats
-		WHERE post_id == %v
-	`, postId))
-	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to aggregate row") {
+	pbRes, err := GetPostStats(postId)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to process request") {
 		return
 	}
-
-	stats := &TAggregatedStats{}
-	err = row.ScanStruct(stats)
-	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to scan stats into a struct") {
-		return
-	}
-	response, err := json.Marshal(stats)
+	resBody, err := protojson.Marshal(pbRes)
 	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to marshal response") {
 		return
 	}
-
-	w.Write(response)
+	_, err = w.Write(resBody)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to respond properly") {
+		return
+	}
 }
 
 func ConsumeKafka() {
@@ -152,4 +167,27 @@ func InsertIntoClickhouse(info *pb.TPostStats) {
 		false,
 	)
 	better_errors.CheckErrorPanic(err, "error on executing insert query")
+}
+
+func (s *server) GetTopPosts(ctx context.Context, _ *emptypb.Empty) (*pb.TGetTopPostsResponse, error) {
+	return nil, fmt.Errorf("qwe")
+}
+
+func (s *server) GetTopAuthors(ctx context.Context, _ *emptypb.Empty) (*pb.TGetTopAuthorsResponse, error) {
+	row := db.QueryRows(context.Background(), `
+		SELECT
+			first_value(post_id) as PostId,
+			sum(viewed) as Views,
+			sum(liked) as Likes
+		FROM post_stats
+		WHERE post_id == %v
+	`)
+	stats := &pb.TGetTopAuthorsResponse{}
+	err := row.ScanStruct(stats)
+	return stats, err
+}
+
+func (s *server) GetPostStats(ctx context.Context, request *pb.TGetPostStatsRequest) (*pb.TGetPostStatsResponse, error) {
+	stats, err := GetPostStats(request.GetPostId())
+	return stats, err
 }

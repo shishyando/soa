@@ -126,7 +126,7 @@ func (UnimplementedPostServiceServer) mustEmbedUnimplementedPostServiceServer() 
 
 // UnsafePostServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to PostServiceServer will
-// result in compilation better_errors
+// result in compilation errors.
 type UnsafePostServiceServer interface {
 	mustEmbedUnimplementedPostServiceServer()
 }
@@ -251,6 +251,170 @@ var PostService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPostsOnPage",
 			Handler:    _PostService_GetPostsOnPage_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "post.proto",
+}
+
+const (
+	StatsService_GetPostStats_FullMethodName  = "/post.StatsService/GetPostStats"
+	StatsService_GetTopPosts_FullMethodName   = "/post.StatsService/GetTopPosts"
+	StatsService_GetTopAuthors_FullMethodName = "/post.StatsService/GetTopAuthors"
+)
+
+// StatsServiceClient is the client API for StatsService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type StatsServiceClient interface {
+	GetPostStats(ctx context.Context, in *TGetPostStatsRequest, opts ...grpc.CallOption) (*TGetPostStatsResponse, error)
+	GetTopPosts(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TGetTopPostsResponse, error)
+	GetTopAuthors(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TGetTopAuthorsResponse, error)
+}
+
+type statsServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewStatsServiceClient(cc grpc.ClientConnInterface) StatsServiceClient {
+	return &statsServiceClient{cc}
+}
+
+func (c *statsServiceClient) GetPostStats(ctx context.Context, in *TGetPostStatsRequest, opts ...grpc.CallOption) (*TGetPostStatsResponse, error) {
+	out := new(TGetPostStatsResponse)
+	err := c.cc.Invoke(ctx, StatsService_GetPostStats_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *statsServiceClient) GetTopPosts(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TGetTopPostsResponse, error) {
+	out := new(TGetTopPostsResponse)
+	err := c.cc.Invoke(ctx, StatsService_GetTopPosts_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *statsServiceClient) GetTopAuthors(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TGetTopAuthorsResponse, error) {
+	out := new(TGetTopAuthorsResponse)
+	err := c.cc.Invoke(ctx, StatsService_GetTopAuthors_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// StatsServiceServer is the server API for StatsService service.
+// All implementations must embed UnimplementedStatsServiceServer
+// for forward compatibility
+type StatsServiceServer interface {
+	GetPostStats(context.Context, *TGetPostStatsRequest) (*TGetPostStatsResponse, error)
+	GetTopPosts(context.Context, *emptypb.Empty) (*TGetTopPostsResponse, error)
+	GetTopAuthors(context.Context, *emptypb.Empty) (*TGetTopAuthorsResponse, error)
+	mustEmbedUnimplementedStatsServiceServer()
+}
+
+// UnimplementedStatsServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedStatsServiceServer struct {
+}
+
+func (UnimplementedStatsServiceServer) GetPostStats(context.Context, *TGetPostStatsRequest) (*TGetPostStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPostStats not implemented")
+}
+func (UnimplementedStatsServiceServer) GetTopPosts(context.Context, *emptypb.Empty) (*TGetTopPostsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopPosts not implemented")
+}
+func (UnimplementedStatsServiceServer) GetTopAuthors(context.Context, *emptypb.Empty) (*TGetTopAuthorsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopAuthors not implemented")
+}
+func (UnimplementedStatsServiceServer) mustEmbedUnimplementedStatsServiceServer() {}
+
+// UnsafeStatsServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to StatsServiceServer will
+// result in compilation errors.
+type UnsafeStatsServiceServer interface {
+	mustEmbedUnimplementedStatsServiceServer()
+}
+
+func RegisterStatsServiceServer(s grpc.ServiceRegistrar, srv StatsServiceServer) {
+	s.RegisterService(&StatsService_ServiceDesc, srv)
+}
+
+func _StatsService_GetPostStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TGetPostStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StatsServiceServer).GetPostStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StatsService_GetPostStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StatsServiceServer).GetPostStats(ctx, req.(*TGetPostStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StatsService_GetTopPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StatsServiceServer).GetTopPosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StatsService_GetTopPosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StatsServiceServer).GetTopPosts(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StatsService_GetTopAuthors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StatsServiceServer).GetTopAuthors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StatsService_GetTopAuthors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StatsServiceServer).GetTopAuthors(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// StatsService_ServiceDesc is the grpc.ServiceDesc for StatsService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var StatsService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "post.StatsService",
+	HandlerType: (*StatsServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetPostStats",
+			Handler:    _StatsService_GetPostStats_Handler,
+		},
+		{
+			MethodName: "GetTopPosts",
+			Handler:    _StatsService_GetTopPosts_Handler,
+		},
+		{
+			MethodName: "GetTopAuthors",
+			Handler:    _StatsService_GetTopAuthors_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

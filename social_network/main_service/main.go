@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"auth"
 	"better_errors"
@@ -25,10 +26,11 @@ import (
 )
 
 var (
-	redisClient       *redis.Client
-	postServiceClient pb.PostServiceClient
-	authHandler       *auth.TAuthHandler
-	kafkaProducer     sarama.AsyncProducer
+	redisClient        *redis.Client
+	postServiceClient  pb.PostServiceClient
+	statsServiceClient pb.StatsServiceClient
+	authHandler        *auth.TAuthHandler
+	kafkaProducer      sarama.AsyncProducer
 )
 
 type TUser struct {
@@ -207,13 +209,8 @@ func DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 	// Delete post
 	pbReq := pb.TDeletePostRequest{}
 	pbReq.AuthorLogin = login // set login from token
-	vars := mux.Vars(r)
-	postIdStr, ok := vars["post_id"]
-	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "invalid post_id") {
-		return
-	}
-	pbReq.PostId, err = strconv.ParseUint(postIdStr, 10, 64)
-	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post_id value %v", postIdStr) {
+	pbReq.PostId, err = parsePostId(r)
+	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post id") {
 		return
 	}
 
@@ -232,13 +229,8 @@ func GetPostByIdHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get post
 	pbReq := pb.TGetPostByIdRequest{}
-	vars := mux.Vars(r)
-	postIdStr, ok := vars["post_id"]
-	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "invalid post_id") {
-		return
-	}
-	pbReq.PostId, err = strconv.ParseUint(postIdStr, 10, 64)
-	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post_id value %v", postIdStr) {
+	pbReq.PostId, err = parsePostId(r)
+	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post id") {
 		return
 	}
 
@@ -268,12 +260,12 @@ func GetPostsOnPageHandler(w http.ResponseWriter, r *http.Request) {
 	// Get posts on page
 	pbReq := pb.TGetPostsOnPageRequest{}
 	vars := mux.Vars(r)
-	postIdStr, ok := vars["page_id"]
+	pageIdStr, ok := vars["page_id"]
 	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "invalid page_id") {
 		return
 	}
-	pbReq.PageId, err = strconv.ParseUint(postIdStr, 10, 64)
-	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid page_id value %v", postIdStr) {
+	pbReq.PageId, err = strconv.ParseUint(pageIdStr, 10, 64)
+	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid page_id value %v", pageIdStr) {
 		return
 	}
 
@@ -295,18 +287,22 @@ func GetPostsOnPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func parsePostId(r *http.Request) (uint64, error) {
+	vars := mux.Vars(r)
+	postIdStr, ok := vars["post_id"]
+	if !ok {
+		return 0, fmt.Errorf("expected uint64, but `%v` found", postIdStr)
+	}
+	return strconv.ParseUint(postIdStr, 10, 64)
+}
+
 func ViewPostByIdHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := auth.VerifyToken(r, authHandler)
 	if better_errors.CheckHttpError(err, w, http.StatusUnauthorized, "invalid token") {
 		return
 	}
-	vars := mux.Vars(r)
-	postIdStr, ok := vars["post_id"]
-	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "invalid post_id") {
-		return
-	}
-	postId, err := strconv.ParseUint(postIdStr, 10, 64)
-	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post_id value %v", postIdStr) {
+	postId, err := parsePostId(r)
+	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post id") {
 		return
 	}
 	postStats := pb.TPostStats{PostId: postId, Liked: 0, Viewed: 1}
@@ -330,13 +326,8 @@ func LikePostByIdHandler(w http.ResponseWriter, r *http.Request) {
 	if better_errors.CheckHttpError(err, w, http.StatusUnauthorized, "invalid token") {
 		return
 	}
-	vars := mux.Vars(r)
-	postIdStr, ok := vars["post_id"]
-	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "invalid post_id") {
-		return
-	}
-	postId, err := strconv.ParseUint(postIdStr, 10, 64)
-	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post_id value %v", postIdStr) {
+	postId, err := parsePostId(r)
+	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post id") {
 		return
 	}
 	postStats := pb.TPostStats{PostId: postId, Liked: 1, Viewed: 0}
@@ -354,6 +345,79 @@ func LikePostByIdHandler(w http.ResponseWriter, r *http.Request) {
 		better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to produce stats message")
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func PostStatsHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := auth.VerifyToken(r, authHandler)
+	if better_errors.CheckHttpError(err, w, http.StatusUnauthorized, "invalid token") {
+		return
+	}
+	pbReq := &pb.TGetPostStatsRequest{}
+	pbReq.PostId, err = parsePostId(r)
+	if better_errors.CheckHttpError(err, w, http.StatusBadRequest, "invalid post id") {
+		return
+	}
+	pbRes, err := statsServiceClient.GetPostStats(r.Context(), pbReq)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to process request") {
+		return
+	}
+	resBody, err := protojson.Marshal(pbRes)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to marshal response") {
+		return
+	}
+	_, err = w.Write(resBody)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to respond properly") {
+		return
+	}
+}
+
+func TopPostsHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := auth.VerifyToken(r, authHandler)
+	if better_errors.CheckHttpError(err, w, http.StatusUnauthorized, "invalid token") {
+		return
+	}
+	vars := mux.Vars(r)
+	sortBy, ok := vars["type"]
+	ok = ok && (sortBy == "likes" || sortBy == "views")
+	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "Should sort by `likes` or `views`") {
+		return
+	}
+
+	pbRes, err := statsServiceClient.GetTopPosts(r.Context(), &emptypb.Empty{})
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to process request") {
+		return
+	}
+	resBody, err := protojson.Marshal(pbRes)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to marshal response") {
+		return
+	}
+	_, err = w.Write(resBody)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to respond properly") {
+		return
+	}
+}
+
+func TopAuthorsHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := auth.VerifyToken(r, authHandler)
+	if better_errors.CheckHttpError(err, w, http.StatusUnauthorized, "invalid token") {
+		return
+	}
+
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to process request") {
+		return
+	}
+	pbRes, err := statsServiceClient.GetTopAuthors(r.Context(), &emptypb.Empty{})
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to process request") {
+		return
+	}
+	resBody, err := protojson.Marshal(pbRes)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to marshal response") {
+		return
+	}
+	_, err = w.Write(resBody)
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to respond properly") {
+		return
+	}
 }
 
 func main() {
@@ -383,10 +447,15 @@ func main() {
 	authHandler, err = auth.NewAuthHandler(privateKeyAbsPath, publicKeyAbsPath)
 	better_errors.CheckErrorFatal(err, "failed to create auth handler")
 
-	grpcconn, err := grpc.Dial("post_service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConnPosts, err := grpc.Dial("post_service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	better_errors.CheckErrorFatal(err, "failed to dial")
-	defer grpcconn.Close()
-	postServiceClient = pb.NewPostServiceClient(grpcconn)
+	defer grpcConnPosts.Close()
+	postServiceClient = pb.NewPostServiceClient(grpcConnPosts)
+
+	grpcConnStats, err := grpc.Dial("stats_service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	better_errors.CheckErrorFatal(err, "failed to dial")
+	defer grpcConnStats.Close()
+	statsServiceClient = pb.NewStatsServiceClient(grpcConnStats)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/users/register", RegisterHandler).Methods("POST")
@@ -399,6 +468,9 @@ func main() {
 	r.HandleFunc("/posts/page/{page_id}", GetPostsOnPageHandler).Methods("GET")
 	r.HandleFunc("/posts/viewed/{post_id}", ViewPostByIdHandler).Methods("PUT")
 	r.HandleFunc("/posts/liked/{post_id}", LikePostByIdHandler).Methods("PUT")
+	r.HandleFunc("/posts/stats/{post_id}", PostStatsHandler).Methods("GET")
+	r.HandleFunc("/posts/top/{type}", TopPostsHandler).Methods("GET")
+	r.HandleFunc("/users/top", TopAuthorsHandler).Methods("GET")
 
 	log.Printf("Staring main user server on port %d", *port)
 
