@@ -29,8 +29,9 @@ func CheckError(err error, msg string, v ...any) bool {
 
 func CheckHttpError(err error, w http.ResponseWriter, code int, msg string, v ...any) bool {
 	if err != nil {
-		log.Println(fmt.Sprintf(msg, v...), err.Error())
-		http.Error(w, fmt.Sprintf(msg, err.Error()), code)
+		str := fmt.Sprintf(msg, v...)
+		log.Println(str, err.Error())
+		http.Error(w, str, code)
 		return true
 	}
 	return false
@@ -52,8 +53,9 @@ func CheckCustomFatal(failed bool, msg string, v ...any) {
 
 func CheckCustomHttp(failed bool, w http.ResponseWriter, code int, msg string, v ...any) bool {
 	if failed {
-		log.Printf(msg, v...)
-		http.Error(w, msg, code)
+		str := fmt.Sprintf(msg, v...)
+		log.Println(str)
+		http.Error(w, str, code)
 		return true
 	}
 	return false
