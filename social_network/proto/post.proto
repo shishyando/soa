@@ -16,8 +16,9 @@ service PostService {
 
 service StatsService {
   rpc GetPostStats(TGetPostStatsRequest) returns (TGetPostStatsResponse) {}
-  rpc GetTopPosts(google.protobuf.Empty) returns (TGetTopPostsResponse) {}
+  rpc GetTopPosts(TGetTopPostsRequest) returns (TGetTopPostsResponse) {}
   rpc GetTopAuthors(google.protobuf.Empty) returns (TGetTopAuthorsResponse) {}
+  rpc AddPost(TAddPostRequest) returns (google.protobuf.Empty) {}
 }
 
 message TPost {
@@ -69,7 +70,17 @@ message TGetPostStatsResponse {
   uint64 Views = 3;
 }
 
-message TGetTopPostsResponse { repeated TPost Posts = 1; }
+message TGetTopPostsRequest { string OrderBy = 1; }
+
+message TGetTopPostsResponse {
+  message TPostStat {
+    uint64 PostId = 1;
+    string AuthorLogin = 2;
+    uint64 Likes = 3;
+    uint64 Views = 4;
+  }
+  repeated TPostStat Posts = 1;
+}
 
 message TGetTopAuthorsResponse {
   message TAuthor {
@@ -78,4 +89,9 @@ message TGetTopAuthorsResponse {
   }
 
   repeated TAuthor Authors = 1;
+}
+
+message TAddPostRequest {
+  uint64 PostId = 1;
+  string AuthorLogin = 2;
 }

@@ -16,6 +16,10 @@ class Handles(Enum):
     PAGE_GET = 8
     POST_VIEW = 9
     POST_LIKE = 10
+    TOP_VIEWED = 11
+    TOP_LIKED = 12
+    TOP_AUTHORS = 13
+    POST_STATS = 14
 
 
 def pprint_response(r: requests.Response):
@@ -43,6 +47,10 @@ class TestSocialNetworkMethods(unittest.TestCase):
             Handles.PAGE_GET: self.host + "posts/page/",
             Handles.POST_VIEW: self.host + "posts/viewed/",
             Handles.POST_LIKE: self.host + "posts/liked/",
+            Handles.TOP_LIKED: self.host + "posts/top/liked",
+            Handles.TOP_VIEWED: self.host + "posts/top/viewed",
+            Handles.TOP_AUTHORS: self.host + "users/top",
+            Handles.POST_STATS: self.host + "posts/stats/"
         }
         self.login = uuid.uuid4().hex[:7].upper()
         self.password = uuid.uuid4().hex[:7].upper()
@@ -168,12 +176,13 @@ class TestSocialNetworkMethods(unittest.TestCase):
         time.sleep(1)
 
     def get_post_stats(self, postId: int):
-        r = requests.get(f"http://localhost:8001/cheat/{postId}")
+        cookies = self.try_login()
+        r = requests.get(self.addrs[Handles.POST_STATS] + str(postId), cookies=cookies.get_dict())
         pprint_response(r)
 
         self.assertEqual(r.status_code, 200)
         stats = json.loads(r.content.decode())
-        return stats['postId'], stats['views'], stats['likes']
+        return int(stats['PostId']), int(stats.get('Views', 0)), int(stats.get('Likes', 0))
 
     def test_stats(self):
         cookies = self.try_login()
@@ -208,6 +217,9 @@ class TestSocialNetworkMethods(unittest.TestCase):
         self.assertEqual(statsPostId, postId)
         self.assertEqual(views, 2)
         self.assertEqual(likes, 1)
+
+        # test top posts
+        
 
 if __name__ == '__main__':
     unittest.main()

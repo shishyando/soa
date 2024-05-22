@@ -164,7 +164,11 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	pbReq.AuthorLogin = login // set login from token
 	pbRes, err := postServiceClient.CreatePost(r.Context(), &pbReq)
-	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to process request") {
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to create post") {
+		return
+	}
+	_, err = statsServiceClient.AddPost(r.Context(), &pb.TAddPostRequest{PostId: *pbRes.PostId, AuthorLogin: login})
+	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to add post") {
 		return
 	}
 	resBody, err := protojson.Marshal(pbRes)
@@ -344,7 +348,6 @@ func LikePostByIdHandler(w http.ResponseWriter, r *http.Request) {
 	case err := <-kafkaProducer.Errors():
 		better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to produce stats message")
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func PostStatsHandler(w http.ResponseWriter, r *http.Request) {
@@ -379,11 +382,11 @@ func TopPostsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sortBy, ok := vars["type"]
 	ok = ok && (sortBy == "likes" || sortBy == "views")
-	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "Should sort by `likes` or `views`") {
+	if better_errors.CheckCustomHttp(!ok, w, http.StatusBadRequest, "Should sort by `liks` or `views`") {
 		return
 	}
 
-	pbRes, err := statsServiceClient.GetTopPosts(r.Context(), &emptypb.Empty{})
+	pbRes, err := statsServiceClient.GetTopPosts(r.Context(), &pb.TGetTopPostsRequest{OrderBy: sortBy})
 	if better_errors.CheckHttpError(err, w, http.StatusInternalServerError, "failed to process request") {
 		return
 	}

@@ -261,6 +261,7 @@ const (
 	StatsService_GetPostStats_FullMethodName  = "/post.StatsService/GetPostStats"
 	StatsService_GetTopPosts_FullMethodName   = "/post.StatsService/GetTopPosts"
 	StatsService_GetTopAuthors_FullMethodName = "/post.StatsService/GetTopAuthors"
+	StatsService_AddPost_FullMethodName       = "/post.StatsService/AddPost"
 )
 
 // StatsServiceClient is the client API for StatsService service.
@@ -268,8 +269,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StatsServiceClient interface {
 	GetPostStats(ctx context.Context, in *TGetPostStatsRequest, opts ...grpc.CallOption) (*TGetPostStatsResponse, error)
-	GetTopPosts(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TGetTopPostsResponse, error)
+	GetTopPosts(ctx context.Context, in *TGetTopPostsRequest, opts ...grpc.CallOption) (*TGetTopPostsResponse, error)
 	GetTopAuthors(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TGetTopAuthorsResponse, error)
+	AddPost(ctx context.Context, in *TAddPostRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type statsServiceClient struct {
@@ -289,7 +291,7 @@ func (c *statsServiceClient) GetPostStats(ctx context.Context, in *TGetPostStats
 	return out, nil
 }
 
-func (c *statsServiceClient) GetTopPosts(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TGetTopPostsResponse, error) {
+func (c *statsServiceClient) GetTopPosts(ctx context.Context, in *TGetTopPostsRequest, opts ...grpc.CallOption) (*TGetTopPostsResponse, error) {
 	out := new(TGetTopPostsResponse)
 	err := c.cc.Invoke(ctx, StatsService_GetTopPosts_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -307,13 +309,23 @@ func (c *statsServiceClient) GetTopAuthors(ctx context.Context, in *emptypb.Empt
 	return out, nil
 }
 
+func (c *statsServiceClient) AddPost(ctx context.Context, in *TAddPostRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, StatsService_AddPost_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StatsServiceServer is the server API for StatsService service.
 // All implementations must embed UnimplementedStatsServiceServer
 // for forward compatibility
 type StatsServiceServer interface {
 	GetPostStats(context.Context, *TGetPostStatsRequest) (*TGetPostStatsResponse, error)
-	GetTopPosts(context.Context, *emptypb.Empty) (*TGetTopPostsResponse, error)
+	GetTopPosts(context.Context, *TGetTopPostsRequest) (*TGetTopPostsResponse, error)
 	GetTopAuthors(context.Context, *emptypb.Empty) (*TGetTopAuthorsResponse, error)
+	AddPost(context.Context, *TAddPostRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedStatsServiceServer()
 }
 
@@ -324,11 +336,14 @@ type UnimplementedStatsServiceServer struct {
 func (UnimplementedStatsServiceServer) GetPostStats(context.Context, *TGetPostStatsRequest) (*TGetPostStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPostStats not implemented")
 }
-func (UnimplementedStatsServiceServer) GetTopPosts(context.Context, *emptypb.Empty) (*TGetTopPostsResponse, error) {
+func (UnimplementedStatsServiceServer) GetTopPosts(context.Context, *TGetTopPostsRequest) (*TGetTopPostsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopPosts not implemented")
 }
 func (UnimplementedStatsServiceServer) GetTopAuthors(context.Context, *emptypb.Empty) (*TGetTopAuthorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopAuthors not implemented")
+}
+func (UnimplementedStatsServiceServer) AddPost(context.Context, *TAddPostRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddPost not implemented")
 }
 func (UnimplementedStatsServiceServer) mustEmbedUnimplementedStatsServiceServer() {}
 
@@ -362,7 +377,7 @@ func _StatsService_GetPostStats_Handler(srv interface{}, ctx context.Context, de
 }
 
 func _StatsService_GetTopPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(TGetTopPostsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -374,7 +389,7 @@ func _StatsService_GetTopPosts_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: StatsService_GetTopPosts_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StatsServiceServer).GetTopPosts(ctx, req.(*emptypb.Empty))
+		return srv.(StatsServiceServer).GetTopPosts(ctx, req.(*TGetTopPostsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -397,6 +412,24 @@ func _StatsService_GetTopAuthors_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StatsService_AddPost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TAddPostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StatsServiceServer).AddPost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StatsService_AddPost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StatsServiceServer).AddPost(ctx, req.(*TAddPostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StatsService_ServiceDesc is the grpc.ServiceDesc for StatsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -415,6 +448,10 @@ var StatsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTopAuthors",
 			Handler:    _StatsService_GetTopAuthors_Handler,
+		},
+		{
+			MethodName: "AddPost",
+			Handler:    _StatsService_AddPost_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

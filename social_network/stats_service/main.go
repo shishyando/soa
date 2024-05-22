@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -34,6 +36,13 @@ func main() {
 
 	CreateTable()
 
+	listenAddress := ":50051"
+	lis, err := net.Listen("tcp", listenAddress)
+	if err != nil {
+		log.Printf("Failed to listen: %v", err)
+		os.Exit(1)
+	}
+
 	serverInstance := grpc.NewServer()
 	pb.RegisterStatsServiceServer(serverInstance, &server{})
 
@@ -42,8 +51,13 @@ func main() {
 	r.HandleFunc("/cheat/{post_id}", GetPostStatsHandler).Methods("GET")
 
 	go ConsumeKafka()
-	log.Println("Starting stats service on port 8001")
-	log.Panicln(http.ListenAndServe(":8001", r))
+	go func() {
+		log.Println("Starting stats service on port 8001")
+		log.Panicln(http.ListenAndServe(":8001", r))
+	}()
+	if err := serverInstance.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
+	}
 }
 
 func ConnectClickhouseDB() {
@@ -59,10 +73,7 @@ func ConnectClickhouseDB() {
 }
 
 func CreateTable() {
-	err := db.Exec(context.Background(), "DROP TABLE IF EXISTS post_stats")
-	better_errors.CheckErrorFatal(err, "error on dropping table")
-
-	err = db.Exec(context.Background(), `
+	err := db.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS post_stats (
             post_id UInt64,
             viewed UInt64,
@@ -169,25 +180,126 @@ func InsertIntoClickhouse(info *pb.TPostStats) {
 	better_errors.CheckErrorPanic(err, "error on executing insert query")
 }
 
-func (s *server) GetTopPosts(ctx context.Context, _ *emptypb.Empty) (*pb.TGetTopPostsResponse, error) {
-	return nil, fmt.Errorf("qwe")
+func (s *server) GetTopPosts(ctx context.Context, request *pb.TGetTopPostsRequest) (*pb.TGetTopPostsResponse, error) {
+	query := fmt.Sprintf(`
+	SELECT
+		ps.post_id,
+		pa.author_login,
+		SUM(ps.liked) AS total_likes,
+		SUM(ps.viewed) AS total_views
+	FROM
+	 	post_stats AS ps
+	INNER JOIN
+	 	post_author AS pa
+	ON
+	 	ps.post_id = pa.post_id
+	GROUP BY
+	 	ps.post_id, pa.author_login
+	ORDER BY
+	 	total_%v DESC
+	LIMIT 3;
+   `, request.OrderBy)
+
+	// Execute the query
+	rows, err := db.Query(ctx, query)
+	if err != nil {
+		log.Printf("failed to get top posts: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Process the results
+	response := &pb.TGetTopPostsResponse{}
+	for rows.Next() {
+		var postID uint64
+		var totalLikes uint64
+		var totalViews uint64
+		var authorLogin string
+
+		err := rows.Scan(&postID, &authorLogin, &totalLikes, &totalViews)
+		if err != nil {
+			log.Printf("error reading row: %v", err)
+			return nil, err
+		}
+
+		response.Posts = append(response.Posts, &pb.TGetTopPostsResponse_TPostStat{
+			PostId:      postID,
+			AuthorLogin: authorLogin,
+			Likes:       totalLikes,
+			Views:       totalViews,
+		})
+	}
+
+	// Check for any errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		log.Printf("error iterating over rows: %v", err)
+		return nil, err
+	}
+
+	// Return the response
+	return response, nil
+
 }
 
 func (s *server) GetTopAuthors(ctx context.Context, _ *emptypb.Empty) (*pb.TGetTopAuthorsResponse, error) {
-	row := db.QueryRows(context.Background(), `
+	rows, err := db.Query(context.Background(), `
 		SELECT
-			first_value(post_id) as PostId,
-			sum(viewed) as Views,
-			sum(liked) as Likes
-		FROM post_stats
-		WHERE post_id == %v
+			pa.author_login,
+			COALESCE(SUM(ps.liked), 0) AS total_likes
+		FROM
+			post_stats AS ps
+		INNER JOIN
+			post_author AS pa
+		ON
+			ps.post_id = pa.post_id
+		GROUP BY
+			pa.author_login
+		ORDER BY
+			total_likes DESC
+		LIMIT 3;
 	`)
-	stats := &pb.TGetTopAuthorsResponse{}
-	err := row.ScanStruct(stats)
-	return stats, err
+	if err != nil {
+		log.Printf("failed to get top authors: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	response := &pb.TGetTopAuthorsResponse{}
+	for rows.Next() {
+		var authorLogin string
+		var totalLikes uint64
+
+		err := rows.Scan(&authorLogin, &totalLikes)
+		if err != nil {
+			log.Printf("error reading row: %v", err)
+			return nil, err
+		}
+
+		response.Authors = append(response.Authors, &pb.TGetTopAuthorsResponse_TAuthor{
+			AuthorLogin: authorLogin,
+			Likes:       totalLikes,
+		})
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("error iterating over rows: %v", err)
+		return nil, err
+	}
+
+	return response, nil
+
 }
 
 func (s *server) GetPostStats(ctx context.Context, request *pb.TGetPostStatsRequest) (*pb.TGetPostStatsResponse, error) {
 	stats, err := GetPostStats(request.GetPostId())
 	return stats, err
+}
+
+func (s *server) AddPost(ctx context.Context, request *pb.TAddPostRequest) (*emptypb.Empty, error) {
+	err := db.AsyncInsert(
+		ctx,
+		fmt.Sprintf(`INSERT INTO post_author (post_id, author_login) VALUES (%d, '%s')`, request.PostId, request.AuthorLogin),
+		true,
+	)
+	return &emptypb.Empty{}, err
 }

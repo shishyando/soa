@@ -64,8 +64,10 @@ func SetCookie(login string, password string, authHandler *TAuthHandler, w http.
 		return fmt.Errorf("failed to sign the jwt token: %v", err.Error())
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:  "jwt",
-		Value: tokenString,
+		Name:    "jwt",
+		Value:   tokenString,
+		Path:    "/",
+		Expires: time.Now().Add(time.Hour * 72),
 	})
 	return nil
 }
