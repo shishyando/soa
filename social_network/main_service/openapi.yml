@@ -1,0 +1,310 @@
+openapi: 3.0.0
+info:
+  title: User Management API
+  version: 1.0.0
+paths:
+  /users/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid input data
+        '409':
+          description: User with this login already exists
+        '500':
+          description: Internal server error
+  /users/login:
+    post:
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUser'
+      responses:
+        '200':
+          description: User authenticated successfully
+        '400':
+          description: Invalid login or password
+        '500':
+          description: Internal server error
+  /users:
+    put:
+      summary: Update user data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+      responses:
+        '200':
+          description: User data updated successfully
+        '400':
+          description: Invalid input data
+        '401':
+          description: Unauthorized, token expired or does not match the username
+        '500':
+          description: Internal server error
+  /posts/create:
+    post:
+      summary: Create post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreate'
+      responses:
+        '200':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreateResponse'
+  /posts/update:
+    put:
+      summary: Update post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostUpdate'
+      responses:
+        '200':
+          description: Post updated successfully
+        '400':
+          description: Invalid input data
+        '401':
+          description: Unauthorized, token expired or does not match the username
+        '500':
+          description: Internal server error
+  /posts/delete/{post_id}:
+    delete:
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            
+      summary: Delete post
+      responses:
+        '200':
+          description: Post deleted successfully
+        '400':
+          description: Invalid input data
+        '401':
+          description: Unauthorized, token expired or does not match the username
+        '500':
+          description: Internal server error
+  /posts/single/{post_id}:
+    get:
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Get post by its id
+      responses:
+        '200':
+          description: Post found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetByIdResponse'
+  /posts/page/{page_id}:
+    get:
+      parameters:
+        - name: page_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Get posts page by page index
+      responses:
+        '200':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
+        '401':
+          description: Unauthorized, token expired or does not match the username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGetPageResponse'
+components:
+  schemas:
+    NewUser:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The user's login name
+          example: shishyando
+        password:
+          type: string
+          format: password
+          description: The user's password
+          example: secret
+    UpdateUser:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The user's first name
+          example: John
+        surname:
+          type: string
+          description: The user's last name
+          example: Doe
+        dateOfBirth:
+          type: string
+          format: date
+          description: The user's date of birth
+          example: 2004-01-20
+        email:
+          type: string
+          format: email
+          description: The user's email
+          example: shishyando@example.com
+        phoneNumber:
+          type: string
+          description: The user's phone number
+          example: '+79998887766'
+    LoginUser:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The user's login name
+          example: shishyando
+        password:
+          type: string
+          format: password
+          description: The user's password
+          example: secret
+    PostCreate:
+      type: object
+      properties:
+        Title:
+          type: string
+          description: Post's title
+          example: Alice in Wonderland
+        Content:
+          type: string
+          description: The post's content
+          example: Today I watched a great movie called "Alice in Wonderland"!...
+    PostCreateResponse:
+      type: object
+      properties:
+        PostId:
+          type: integer
+          description: Post's unique id if it was successfuly created
+    PostGetByIdResponse:
+      type: object
+      properties:
+        Post:
+          type: object
+          properties:
+            PostId:
+              type: integer
+            Title:
+              type: string
+            Content:
+              type: string
+            AuthorLogin:
+              type: string
+
+    PostGetPageResponse:
+      type: object
+      properties:
+        Posts:
+          type: array
+          items:
+            type: object
+            properties:
+              PostId:
+                type: integer
+              Title:
+                type: string
+              Content:
+                type: string
+              AuthorLogin:
+                type: string
+    PostUpdate:
+      type: object
+      properties:
+        PostId:
+          type: integer
+          description: Post id received when creating a post
+          example: 42
+        Title:
+          type: string
+          description: Post's new title
+          example: Alice in Wonderland 2
+        Content:
+          type: string
+          description: The post's new content
+          example: Yesterday I watched a great movie called "Alice in Wonderland 2"!...
