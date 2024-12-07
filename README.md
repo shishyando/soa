@@ -1,19 +1,4 @@
-# soa
+### Service oriented architecture coursework
+This is a straightforward social network dummy approach with users' registration & authentification. Users can post/edit/delete posts, like/view others' posts, view top viewed/liked ones.
 
-# Social Network
-
-Шишихин Павел, 216
-
-🌐 Discover the new way to connect and share! 🤝💡
-
-🔒 Focused on Privacy - Your space, your rules.
-🎉 Engage in fun, interactive experiences.
-💬 Share your moments, meet friends, ignite conversations.
-
-🌟 Be part of the change. Light up your social life.
-
-🚀 Join us and start your journey today. 🌈
-
-Your world, reimagined. ⏳
-
-© GPT-4 Turbo
+Includes Clickhouse for storing posts & users' info, Apache Kafka / gRPC for interservice communication, Redis for auth caching.
